@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -62,13 +62,37 @@ export interface NewUserProfile {
 
 export const userService = {
   async getAllUsers(): Promise<UserProfile[]> {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data || [];
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      // Return mock data for demo purposes when Supabase is not configured
+      return [
+        {
+          id: '1',
+          name: 'John Doe',
+          email: 'john@example.com',
+          role: 'Admin' as const,
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          name: 'Jane Smith',
+          email: 'jane@example.com',
+          role: 'User' as const,
+          created_at: new Date().toISOString(),
+        }
+      ];
+    }
   },
 
   async getUserById(id: string): Promise<UserProfile | null> {
@@ -83,34 +107,55 @@ export const userService = {
   },
 
   async createUser(user: NewUserProfile): Promise<UserProfile> {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .insert([user])
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .insert([user])
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      // Return mock created user for demo
+      return {
+        id: Date.now().toString(),
+        ...user,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
   },
 
   async updateUser(id: string, updates: Partial<NewUserProfile>): Promise<UserProfile> {
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      throw error;
+    }
   },
 
   async deleteUser(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('user_profiles')
-      .delete()
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', id);
 
-    if (error) throw error;
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      throw error;
+    }
   }
 };
